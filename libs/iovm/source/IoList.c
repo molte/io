@@ -275,7 +275,9 @@ void IoList_checkIndex(IoList *self, IoMessage *m, char allowsExtending, int ind
 IO_METHOD(IoList, with)
 {
 	/*doc List with(anObject, ...)
-	Returns a new List containing the arguments. 
+    Returns a new List containing the arguments. Example:
+	<pre>Io> List with(1, 2, 3)
+==> list(1, 2, 3)</pre>
 	*/
 
 	int n, argCount = IoMessage_argCount(m);
@@ -295,7 +297,11 @@ IO_METHOD(IoList, indexOf)
 {
 	/*doc List indexOf(anObject)
 	Returns the index of the first occurrence of anObject
-	in the receiver. Returns Nil if the receiver doesn't contain anObject. 
+	in the receiver. Returns Nil if the receiver doesn't contain anObject. Example:
+	<pre>Io> list(1, 2, 3, 2) indexOf(2)
+==> 1
+Io> list(1, 2, 3, 2) indexOf(4)
+==> nil</pre>
 	*/
 
 	int count = IoMessage_argCount(m);
@@ -314,7 +320,11 @@ IO_METHOD(IoList, indexOf)
 IO_METHOD(IoList, contains)
 {
 	/*doc List contains(anObject)
-	Returns true if the receiver contains anObject, otherwise returns false. 
+	Returns true if the receiver contains anObject, otherwise returns false. Example:
+	<pre>Io> list(1, 2, 3) contains(3)
+==> true
+Io> list(1, 2, 3) contains("a")
+==> false</pre>
 	*/
 
 	IoObject *v = IoMessage_locals_valueArgAt_(m, locals, 0);
@@ -335,6 +345,17 @@ IO_METHOD(IoList, capacity)
 {
 	/*doc List capacity
 	Returns the number of potential elements the receiver can hold before it needs to grow.
+	This is usually the smallest possible number <var>x</var> that is greater than
+	the number of items in the receiver and at the same time satisfies the equation
+	x = 2<sup><var>y</var></sup> for some integer <var>y</var>. Example:
+	<pre>Io> list capacity
+==> 1
+Io> list(1) capacity
+==> 2
+Io> list(1, 2) capacity
+==> 4
+Io> list(1, 2, 3, 4, 5) capacity
+==> 8</pre>
 	*/
 	
 	return IONUMBER(DATA(self)->memSize / sizeof(void *));
@@ -343,7 +364,13 @@ IO_METHOD(IoList, capacity)
 IO_METHOD(IoList, size)
 {
 	/*doc List size
-	Returns the number of items in the receiver. 
+	Returns the number of items in the receiver. Example:
+	<pre>Io> list("One", "Two", "Three") size
+==> 3
+Io> list("Just one element") size
+==> 1
+Io> list size
+==> 0</pre>
 	*/
 
 	return IONUMBER(List_size(DATA(self)));
@@ -352,7 +379,18 @@ IO_METHOD(IoList, size)
 IO_METHOD(IoList, at)
 {
 	/*doc List at(index)
-	Returns the value at index. Returns Nil if the index is out of bounds. 
+	Returns the value at index. Returns Nil if the index is out of bounds.
+	If index is a negative value, it will count backwards from the end of the receiver. Example:
+	<pre>Io> list("First", "Second", "Third", "Fourth") at(0)
+==> First
+Io> list("First", "Second", "Third", "Fourth") at(2)
+==> Third
+Io> list("First", "Second", "Third", "Fourth") at(4)
+==> nil
+Io> list("First", "Second", "Third", "Fourth") at(-1)
+==> Fourth
+Io> list("First", "Second", "Third", "Fourth") at(-2)
+==> Third</pre>
 	*/
 
 	int index = IoMessage_locals_intArgAt_(m, locals, 0);
@@ -366,7 +404,9 @@ IO_METHOD(IoList, first)
 {
 	/*doc List first(optionalSize)
 	Returns the first item or Nil if the list is empty.
-	If optionalSize is provided, that number of the first items in the list are returned. 
+	If optionalSize is provided, that number of the first items in the list are returned. Example:
+	<pre>Io> list("First", "Second", "Third", "Fourth") first
+==> First</pre>
 	*/
 
     IoObject *result = List_at_(DATA(self), 0);
@@ -377,7 +417,9 @@ IO_METHOD(IoList, last)
 {
 	/*doc List last(optionalSize)
 	Returns the last item or Nil if the list is empty.
-	If optionalSize is provided, that number of the last items in the list are returned. 
+	If optionalSize is provided, that number of the last items in the list are returned. Example:
+	<pre>Io> list("First", "Second", "Third", "Fourth") last
+==> Fourth</pre>
 	*/
 
     IoObject *result = List_at_(DATA(self), List_size(DATA(self)) - 1);
@@ -418,13 +460,19 @@ void IoList_sliceArguments(IoList *self, IoObject *locals, IoMessage *m, int *st
 
 IO_METHOD(IoList, slice)
 {
-	/*doc List slice(startIndex, endIndex, step)
-	Returns a new string containing the subset of the receiver 
-    from the startIndex to the endIndex. The endIndex argument
-	is optional. If not given, it is assumed to be the end of the string. 
-    Step argument is also optional and defaults to 1, if not given.
-    However, since Io supports positional arguments only, you need to
-    explicitly specify endIndex, if you need a custom step.
+	/*doc List slice(startIndex, optionalEndIndex, optionalStep)
+	Returns a new string containing the subset of the receiver from startIndex to optionalEndIndex.
+	If optionalEndIndex is not given, it is assumed to be the end of the string.
+	If optionalStep is provided, it determines the jump between each element drawn into the subset, otherwise it defaults to 1.
+	If set to 2, for instance, only every second element within the range are included in the subset.
+    However, since Io supports positional arguments only, you need to explicitly specify optionalEndIndex, if you need a custom optionalStep.
+    Example:
+    <pre>Io> list(1, 2, 3, 4) slice(1)
+==> list(2, 3, 4)
+Io> list(1, 2, 3, 4) slice(1, 3)
+==> list(2, 3)
+Io> list(1, 2, 3, 4, 5, 6, 7, 8, 9) slice(1, 9, 3)
+==> list(2, 5, 8)</pre>
 	*/
     List *list;
     int start, end, step;
@@ -445,11 +493,18 @@ IO_METHOD(IoList, slice)
 
 IO_METHOD(IoList, sliceInPlace)
 {
-	/*doc List sliceInPlace(startIndex, endIndex, step)
-	Returns the receiver containing the subset of the
-	receiver from the startIndex to the endIndex. The endIndex argument
-	is optional. If not given, it is assumed to be the end of the string. 
-    Step argument is also optional and defaults to 1.
+	/*doc List sliceInPlace(startIndex, optionalEndIndex, optionalStep)
+	Same as slice(startIndex, optionalEndIndex, optionalStep), but overwrites the receiver. Example:
+	<pre>Io> myList := list(1, 2, 3, 4)
+==> list(1, 2, 3, 4)
+Io> myList slice(1, 3)
+==> list(2, 3)
+Io> myList
+==> list(1, 2, 3, 4)
+Io> myList sliceInPlace(1, 3)
+==> list(2, 3)
+Io> myList
+==> list(2, 3)</pre>
 	*/
 
 	int start, end, step;
@@ -495,14 +550,12 @@ done:
 IO_METHOD(IoList, foreach)
 {
 	/*doc List foreach(optionalIndex, value, message)
-Loops over the list values setting the specified index and
-value slots and executing the message. Returns the result of the last
-execution of the message. Example:
-<p>
-<pre>
-list(1, 2, 3) foreach(i, v, writeln(i, " = ", v))
-list(1, 2, 3) foreach(v, writeln(v))</pre>	
-*/
+    Loops over the list values setting the specified index and
+    value slots and executing the message. Returns the result of the last
+    execution of the message. Example:
+    <pre>list(1, 2, 3) foreach(i, v, writeln(i, " = ", v))
+list(1, 2, 3) foreach(v, writeln(v))</pre>
+    */
 
 	IoState *state = IOSTATE;
 	IoObject *result = IONIL(self);
@@ -591,8 +644,10 @@ done:
 
 IO_METHOD(IoList, appendIfAbsent)
 {
-	/*doc List appendIfAbsent(anObject)
-	Adds each value not already contained by the receiver, returns self. 
+	/*doc List appendIfAbsent(anObject, ...)
+	Adds each value not already contained in the receiver, returns self. Example:
+	<pre>Io> list(1, 2, 2, 3) appendIfAbsent(2, 7)
+==> list(1, 2, 2, 3, 7)</pre>
 	*/
 
 	int n;
@@ -615,7 +670,9 @@ IO_METHOD(IoList, appendIfAbsent)
 IO_METHOD(IoList, appendSeq)
 {
 	/*doc List appendSeq(aList1, aList2, ...)
-	Add the items in the lists to the receiver. Returns self.
+	Add the items in the lists to the receiver. Returns self. Example:
+	<pre>Io> list(1, 2, 3) appendSeq(list(1, 2, 3), list(4, 5, 6))
+==> list(1, 2, 3, 1, 2, 3, 4, 5, 6)</pre>
 	*/
 
 	int i;
@@ -651,11 +708,13 @@ IO_METHOD(IoList, appendSeq)
 IO_METHOD(IoList, append)
 {
 	/*doc List append(anObject1, anObject2, ...)
-	Appends the arguments to the end of the list. Returns self.
+	Appends the arguments to the end of the list. Returns self. Example:
+	<pre>Io> list(1, 2, 3) append(4, 5, 6)
+==> list(1, 2, 3, 4, 5, 6)</pre>
 	*/
 	
 	/*doc List push(anObject1, anObject2, ...)
-	Same as add(anObject1, anObject2, ...).
+	Same as append(anObject1, anObject2, ...).
 	*/
 
 	int n;
@@ -676,7 +735,9 @@ IO_METHOD(IoList, append)
 IO_METHOD(IoList, prepend)
 {
 	/*doc List prepend(anObject1, anObject2, ...)
-	Inserts the values at the beginning of the list. Returns self.
+	Inserts the values at the beginning of the list. Returns self. Example:
+	<pre>Io> list(4, 5, 6) prepend(1, 2, 3)
+==> list(1, 2, 3, 4, 5, 6)</pre>
 	*/
 
 	int n;
@@ -698,7 +759,9 @@ IO_METHOD(IoList, prepend)
 IO_METHOD(IoList, remove)
 {
 	/*doc List remove(anObject, ...)
-	Removes all occurrences of the arguments from the receiver. Returns self. 
+	Removes all occurrences of the arguments from the receiver. Returns self. Example:
+	<pre>Io> list(1, 2, 3, 2) remove(2, 5)
+==> list(1, 3)</pre>
 	*/
 
 	int count = IoMessage_argCount(m);
@@ -736,7 +799,11 @@ IO_METHOD(IoList, pop)
 {
 	/*doc List pop
 	Returns the last item in the list and removes it
-	from the receiver. Returns nil if the receiver is empty. 
+	from the receiver. Returns nil if the receiver is empty. Example:
+	<pre>Io> list("First", "Second", "Third", "Fourth") pop
+==> Fourth
+Io> list pop
+==> nil</pre>
 	*/
 
 	IoObject *v = List_pop(DATA(self));
@@ -746,9 +813,13 @@ IO_METHOD(IoList, pop)
 IO_METHOD(IoList, atInsert)
 {
 	/*doc List atInsert(index, anObject)
-	Inserts anObject at the index specified by index.
-	Adds anObject if the index equals the current count of the receiver.
-	Raises an exception if the index is out of bounds. Returns self. 
+	Inserts anObject before the element at the index specified by index.
+	Appends anObject to the receiver if the index equals the size of the receiver.
+	Raises an exception if the index is out of bounds. Returns self. Example:
+    <pre>Io> list("First", "Second", "Third", "Fourth") atInsert(2, "New")
+==> list(First, Second, New, Third, Fourth)
+Io> list("First", "Second", "Third", "Fourth") atInsert(4, "Even newer")
+==> list(First, Second, Third, Fourth, Even newer)</pre>
 	*/
 
 	int index = IoMessage_locals_intArgAt_(m, locals, 0);
@@ -764,7 +835,13 @@ IO_METHOD(IoList, removeAt)
 {
 	/*doc List removeAt(index)
 	Removes the item at the specified index and returns the value removed.
-	Raises an exception if the index is out of bounds. 
+	Raises an exception if the index is out of bounds. Example:
+	<pre>Io> myList := list(1, 2, 3, 4, 5)
+==> list(1, 2, 3, 4, 5)
+Io> myList remove(2)
+==> 3
+Io> myList
+==> list(1, 2, 4, 5)</pre>
 	*/
 
 	int index = IoMessage_locals_intArgAt_(m, locals, 0);
@@ -791,7 +868,9 @@ IO_METHOD(IoList, atPut)
 {
 	/*doc List atPut(index, anObject)
 	Replaces the existing value at index with anObject.
-	Raises an exception if the index is out of bounds. Returns self.
+	Raises an exception if the index is out of bounds. Returns self. Example:
+	<pre>Io> list(1, 2, 3, 4, 5) atPut(3, "Hello")
+==> list(1, 2, 3, Hello, 5)</pre>
 	*/
 
 	int index = IoMessage_locals_intArgAt_(m, locals, 0);
@@ -806,7 +885,11 @@ IO_METHOD(IoList, atPut)
 IO_METHOD(IoList, setSize)
 {
 	/*doc List setSize
-	Sets the size of the receiver by either removing excess items or adding nils as needed.
+	Sets the size of the receiver by either removing excess items or adding nils as needed. Example:
+	<pre>Io> list("First", "Second", "Third", "Fourth") setSize(2)
+==> list(First, Second)
+Io> list("First", "Second", "Third", "Fourth") setSize(6)
+==> list(First, Second, Third, Fourth, nil, nil)</pre>
 	*/
 	
 	List *list = DATA(self);
@@ -835,7 +918,9 @@ IO_METHOD(IoList, setSize)
 IO_METHOD(IoList, removeAll)
 {
 	/*doc List empty
-	Removes all items from the receiver.
+	Removes all items from the receiver. Example:
+	<pre>Io> list(1, 2, 3) removeAll
+==> list()</pre>
 	*/
 
 	List_removeAll(DATA(self));
@@ -847,7 +932,9 @@ IO_METHOD(IoList, swapIndices)
 {
 	/*doc List swapIndices(index1, index2)
 	Exchanges the object at index1 with the object at index2.
-	Raises an exception if either index is out of bounds. Returns self.
+	Raises an exception if either index is out of bounds. Returns self. Example:
+	<pre>Io> list(1, 4, 3, 2) swapIndices(1, 3)
+==> list(1, 2, 3, 4)</pre>
 	*/
 
 	int i = IoMessage_locals_intArgAt_(m, locals, 0);
@@ -863,7 +950,13 @@ IO_METHOD(IoList, swapIndices)
 IO_METHOD(IoList, reverseInPlace)
 {
 	/*doc List reverseInPlace
-	Reverses the ordering of all the items in the receiver. Returns self.
+	Reverses the ordering of all the items in the receiver. Returns self. Example:
+	<pre>Io> myList := list(1, 2, 3, 4)
+==> list(1, 2, 3, 4)
+Io> myList reverseInPlace
+==> list(4, 3, 2, 1)
+Io> myList
+==> list(4, 3, 2, 1)</pre>
 	*/
 	List_reverseInPlace(DATA(self));
 	IoObject_isDirty_(self, 1);
@@ -912,7 +1005,11 @@ IO_METHOD(IoList, sortInPlace)
 	/*doc List sortInPlace(optionalExpression)
 	Sorts the list using the compare method on the items. Returns self.
 	If an optionalExpression is provided, the sort is done on the result of the evaluation
-	of the optionalExpression on each value.
+	of the optionalExpression on each value. Example:
+	<pre>Io> list("b", "c", "a") sortInPlace
+==> list(a, b, c)
+Io> list("Hello", "my", "friend") sortInPlace
+==> list(Hello, friend, my)</pre>
 	*/
 
 	if (IoMessage_argCount(m) == 0)
@@ -1155,7 +1252,11 @@ IO_METHOD(IoList, join)
 	/*doc List join(optionalSeperator)
 	Returns a String with the elements of the receiver concatenated into one String. 
 	If optionalSeperator is provided, it is used to separate the concatenated strings.
-	This operation does not respect string encodings.
+	This operation does not respect string encodings. Example:
+	<pre>Io> list("a", "b", "c") join
+==> abc
+Io> list("Hello", "number", 1) join(" ")
+==> Hello number 1</pre>
 	*/
 
 	List *items = IoList_rawList(self);
